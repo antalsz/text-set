@@ -25,12 +25,13 @@ library
                      , Text.DAFSA.Graph
                      , Text.DAFSA.TransitionTable
                      , Text.DAFSA.ID
+                     , Text.DAFSA.Graph.Inspect
                      , Text.Set.Test
                      , Control.Monad.Util
                      , CLI.BuildTextSet
   
   other-extensions:    GeneralizedNewtypeDeriving
-                     , TypeApplications, ScopedTypeVariables
+                     , TypeApplications, ScopedTypeVariables, RankNTypes
                      , BangPatterns, TupleSections, LambdaCase, RecordWildCards
   
   build-depends:       base                 ==4.12.*
