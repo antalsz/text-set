@@ -10,10 +10,12 @@ module Text.DAFSA.ID (
   deleteID
 ) where
 
+import Data.Coerce
+
 import Data.Hashable
 
-import           Data.Set (Set)
-import qualified Data.Set as S
+import           Data.IntSet (IntSet)
+import qualified Data.IntSet as S
 
 import Control.Monad.ST.Strict
 import Data.STRef.Strict
@@ -22,7 +24,7 @@ newtype ID = ID { getID :: Int }
   deriving (Eq, Ord, Enum, Bounded, Num, Real, Integral, Hashable, Show, Read)
 
 data IDAllocator s = IDAllocator { nextId   :: !(STRef s ID)
-                                 , freeList :: !(STRef s (Set ID)) }
+                                 , freeList :: !(STRef s IntSet) }
                    deriving Eq
 
 newIDAllocator :: ST s (IDAllocator s)
@@ -34,8 +36,8 @@ newIDAllocator = do
 freshID :: IDAllocator s -> ST s ID
 freshID IDAllocator{..} =
   S.minView <$> readSTRef freeList >>= \case
-    Just (fresh, freeList') -> fresh <$ writeSTRef freeList freeList'
+    Just (fresh, freeList') -> ID fresh <$ writeSTRef freeList freeList'
     Nothing                 -> readSTRef nextId <* modifySTRef' nextId (+1)
 
 deleteID :: IDAllocator s -> ID -> ST s ()
-deleteID IDAllocator{..} = modifySTRef' freeList . S.insert
+deleteID IDAllocator{..} = modifySTRef' freeList . coerce S.insert

@@ -10,15 +10,15 @@ module Text.Set (
 ) where
 
 import Prelude hiding (null, lookup)
-import qualified Prelude as P
 
 import Data.Coerce
 
 import Data.Foldable hiding (null)
 import Data.List (sort)
 
-import qualified Data.Set as S
+import qualified Data.IntSet as S
 
+import Text.DAFSA.ID (ID(..))
 import Text.DAFSA.TransitionTable hiding (fromAsc)
 import qualified Text.DAFSA.TransitionTable as DAFSA
 
@@ -42,7 +42,7 @@ fromFoldable = fromAsc . sort . toList
 {-# INLINABLE fromFoldable #-}
 
 member :: String -> TextSet -> Bool
-member s (TextSet dafsa) = any (`S.member` acceptStates dafsa) $ lookup s dafsa
+member s (TextSet dafsa) = any (coerce (`S.member` acceptStates dafsa)) $ (lookup s dafsa)
 {-# INLINABLE member #-}
 
 notMember :: String -> TextSet -> Bool
@@ -50,7 +50,5 @@ notMember = \s set -> not $ s `member` set
 {-# INLINABLE notMember #-}
 
 null :: TextSet -> Bool
-null = P.null . acceptStates . textSetDAFSA
+null = S.null . acceptStates . textSetDAFSA
 {-# INLINABLE null #-}
-    
-           

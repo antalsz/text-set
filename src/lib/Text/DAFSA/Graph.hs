@@ -33,14 +33,11 @@ module Text.DAFSA.Graph (
 ) where
 
 import Data.Functor
-import Control.Applicative
 import Data.Foldable
-import Data.Bifunctor
 
 import Data.Hashable
 import qualified Data.HashTable.ST.Cuckoo as Cuckoo
 import qualified Data.HashTable.Class     as H
-import qualified Data.Set                 as S
 
 import Control.Monad.Util
 import Control.Monad.ST.Strict
@@ -53,20 +50,19 @@ data DFAState s = DFAState { stateId   :: !ID
                            , accept    :: !(STRef s Bool)
                            , children  :: !(Cuckoo.HashTable s Char (DFAState s)) }
 
+-- Module-local
+equiv_children :: Cuckoo.HashTable s Char (DFAState s) -> Cuckoo.HashTable s Char (DFAState s) -> ST s Bool
+equiv_children kids1 kids2 =
+  let this `subset` that =
+        H.foldM (\b (c,q) -> pure b `andM` any ((stateId q ==) . stateId) <$> H.lookup that c) True this
+      {-# INLINE subset #-}
+  in (kids1 `subset` kids2) `andM` (kids2 `subset` kids1)
+{-# INLINE equiv_children #-}
+
 equiv :: DFAState s -> DFAState s -> ST s Bool
 equiv state1 state2 =
-  readSTRef (accept state1) <==> readSTRef (accept state2) <&&>
-  transitions state1        <==> transitions state2
-  where
-    transitions = fmap (S.fromList . map (second stateId)) . H.toList . children
-    
-    (<==>) :: (Applicative f, Eq a) => f a -> f a -> f Bool
-    (<==>) = liftA2 (==)
-    b1 <&&> b2 = b1 >>= \case
-                   True  -> b2
-                   False -> pure False
-    infix  4 <==>
-    infixr 3 <&&>
+  (==) <$> readSTRef (accept state1) <*> readSTRef (accept state2) `andM`
+  children state1 `equiv_children` children state2
 
 walkPrefix :: DFAState s -> String -> ST s (DFAState s, String)
 walkPrefix !state             []       = pure (state, [])
@@ -121,7 +117,7 @@ replaceOrRegister idAllocator register = go where
 fromAscST :: Foldable t => t String -> ST s (DFAState s)
 fromAscST words = do
   register     <- newSTRef []
-  idAllocator  <- IDAllocator <$> newSTRef 0 <*> newSTRef S.empty
+  idAllocator  <- IDAllocator <$> newSTRef 0 <*> newSTRef mempty
   initialState <- do stateId     <- freshID idAllocator
                      lastChild   <- newSTRef '\0'
                      accept      <- newSTRef False
