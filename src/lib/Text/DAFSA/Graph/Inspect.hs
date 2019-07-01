@@ -34,7 +34,7 @@ import Data.STRef.Strict
 import Text.DAFSA.ID
 import Text.DAFSA.Graph
 
-data DFAState' = DFAState' { stateId'   :: !ID
+data DFAState' = DFAState' { stateID'   :: !ID
                            , lastChild' :: !Char
                            , accept'    :: !Bool
                            , children'  :: !(Map Char DFAState') }
@@ -43,7 +43,7 @@ data DFAState' = DFAState' { stateId'   :: !ID
 
 freezeDFAState' :: DFAState s -> ST s DFAState'
 freezeDFAState' DFAState{..} =
-  DFAState' stateId
+  DFAState' stateID
         <$> readSTRef lastChild
         <*> readSTRef accept
         <*> (fmap M.fromList . traverse (traverse freezeDFAState') =<< H.toList children)
@@ -61,7 +61,7 @@ toTree :: DFAState' -> Tree NodeLabel
 toTree = go Nothing where
   go fromChar DFAState'{..} =
     Node (NodeLabel fromChar
-                    stateId'
+                    stateID'
                     (if null children' && lastChild' == minBound then Nothing else Just lastChild')
                     accept')
          (map (uncurry $ go . Just) $ M.toList children')

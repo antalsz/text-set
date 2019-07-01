@@ -28,13 +28,13 @@ newtype ID = ID { getID :: Int }
            deriving newtype  (Eq, Ord, Enum, Bounded, Num, Real, Integral, Hashable)
            deriving anyclass (NFData)
 
-data IDAllocator s = IDAllocator { nextId   :: !(STRef s ID)
+data IDAllocator s = IDAllocator { nextID   :: !(STRef s ID)
                                  , freeList :: !(STRef s IntSet) }
                    deriving (Eq, Generic, NFData)
 
 newIDAllocator :: ST s (IDAllocator s)
 newIDAllocator = do
-  nextId   <- newSTRef 0
+  nextID   <- newSTRef 0
   freeList <- newSTRef S.empty
   pure IDAllocator{..}
 
@@ -42,7 +42,7 @@ freshID :: IDAllocator s -> ST s ID
 freshID IDAllocator{..} =
   S.minView <$> readSTRef freeList >>= \case
     Just (fresh, freeList') -> ID fresh <$ writeSTRef freeList freeList'
-    Nothing                 -> readSTRef nextId <* modifySTRef' nextId (+1)
+    Nothing                 -> readSTRef nextID <* modifySTRef' nextID (+1)
 
 deleteID :: IDAllocator s -> ID -> ST s ()
 deleteID IDAllocator{..} = modifySTRef' freeList . coerce S.insert

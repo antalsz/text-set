@@ -52,7 +52,7 @@ import Data.STRef.Strict
 
 import Text.DAFSA.ID
 
-data DFAState s = DFAState { stateId   :: !ID
+data DFAState s = DFAState { stateID   :: !ID
                            , lastChild :: !(STRef s Char)
                            , accept    :: !(STRef s Bool)
                            , children  :: !(Basic.HashTable s Char (DFAState s)) }
@@ -60,7 +60,7 @@ data DFAState s = DFAState { stateId   :: !ID
 
 newEmptyDFAState :: IDAllocator s -> Bool -> ST s (DFAState s)
 newEmptyDFAState idAllocator acc = do
-  stateId   <- freshID idAllocator
+  stateID   <- freshID idAllocator
   lastChild <- newSTRef minBound
   accept    <- newSTRef acc
   children  <- H.new
@@ -71,7 +71,7 @@ newEmptyDFAState idAllocator acc = do
 equiv_children :: HashTable h => h s Char (DFAState s) -> h s Char (DFAState s) -> ST s Bool
 equiv_children kids1 kids2 =
   let this `subset` that =
-        H.foldM (\b (c,q) -> pure b `andM` any ((stateId q ==) . stateId) <$> H.lookup that c) True this
+        H.foldM (\b (c,q) -> pure b `andM` any ((stateID q ==) . stateID) <$> H.lookup that c) True this
       {-# INLINE subset #-}
   in (kids1 `subset` kids2) `andM` (kids2 `subset` kids1)
 {-# INLINE equiv_children #-}
@@ -114,11 +114,11 @@ replaceOrRegister :: IDAllocator s -> STRef s [DFAState s] -> DFAState s -> ST s
 replaceOrRegister idAllocator register = go where
   go DFAState{..} = do
     lastChildChar <- readSTRef lastChild
-    traverse_ <&> (H.lookup children lastChildChar >>=) $ \child@DFAState{stateId=childStateId} -> do
+    traverse_ <&> (H.lookup children lastChildChar >>=) $ \child@DFAState{stateID=childStateID} -> do
       go child
       readSTRef register >>= findM (equiv child) >>= \case
         Just q  -> do H.insert children lastChildChar q
-                      deleteID idAllocator childStateId
+                      deleteID idAllocator childStateID
         Nothing -> modifySTRef' register (child:)
 {-# INLINABLE  replaceOrRegister #-}
 
