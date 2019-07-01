@@ -1,4 +1,5 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, LambdaCase, RecordWildCards #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, DeriveGeneric, DeriveAnyClass, DerivingStrategies,
+             LambdaCase, RecordWildCards #-}
 
 module Text.DAFSA.ID (
   -- * State IDs
@@ -10,7 +11,9 @@ module Text.DAFSA.ID (
   deleteID
 ) where
 
+import GHC.Generics
 import Data.Coerce
+import Control.DeepSeq
 
 import Data.Hashable
 
@@ -21,11 +24,13 @@ import Control.Monad.ST.Strict
 import Data.STRef.Strict
 
 newtype ID = ID { getID :: Int }
-  deriving (Eq, Ord, Enum, Bounded, Num, Real, Integral, Hashable, Show, Read)
+           deriving stock    (Show, Read, Generic)
+           deriving newtype  (Eq, Ord, Enum, Bounded, Num, Real, Integral, Hashable)
+           deriving anyclass (NFData)
 
 data IDAllocator s = IDAllocator { nextId   :: !(STRef s ID)
                                  , freeList :: !(STRef s IntSet) }
-                   deriving Eq
+                   deriving (Eq, Generic, NFData)
 
 newIDAllocator :: ST s (IDAllocator s)
 newIDAllocator = do

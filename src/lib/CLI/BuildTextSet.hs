@@ -1,10 +1,13 @@
-{-# LANGUAGE LambdaCase #-}
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass, LambdaCase #-}
 
 module CLI.BuildTextSet (
   main,
   -- * CLI interface
   Command(..), commands, commandsInfo
 ) where
+
+import GHC.Generics
+import Control.DeepSeq
 
 import Data.Foldable
 
@@ -19,7 +22,7 @@ data Command = SortedCmd
              | UnsortedCmd
              | TestCmd  Word
              | TestsCmd Word
-             deriving (Eq, Ord, Show, Read)
+             deriving (Eq, Ord, Show, Read, Generic, NFData)
 
 commands :: Parser Command
 commands = hsubparser $  trivialCommand "sorted"   SortedCmd   "Generate a TextSet from a sorted input list"

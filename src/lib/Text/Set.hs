@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeApplications, ScopedTypeVariables #-}
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass, TypeApplications, ScopedTypeVariables #-}
 
 module Text.Set (
   -- * The 'TextSet' data type (a 'DAFSA')
@@ -11,7 +11,9 @@ module Text.Set (
 
 import Prelude hiding (null, lookup)
 
+import GHC.Generics
 import Data.Coerce
+import Control.DeepSeq
 
 import Data.Foldable hiding (null)
 import Data.List (sort)
@@ -22,7 +24,7 @@ import Text.DAFSA.ID (ID(..))
 import Text.DAFSA.TransitionTable hiding (fromAsc)
 import qualified Text.DAFSA.TransitionTable as DAFSA
 
-newtype TextSet = TextSet { textSetDAFSA :: DAFSA } deriving (Eq, Ord)
+newtype TextSet = TextSet { textSetDAFSA :: DAFSA } deriving (Generic, NFData)
 
 empty :: TextSet
 empty = TextSet $ DAFSA mempty mempty

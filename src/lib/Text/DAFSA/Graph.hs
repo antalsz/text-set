@@ -12,7 +12,8 @@ Linguistics/ 26(1), pp.3-16.  Available online at
 <https://www.aclweb.org/anthology/J00-1002>.
 -}
 
-{-# LANGUAGE TypeApplications, ScopedTypeVariables,
+{-# LANGUAGE DeriveGeneric,
+             TypeApplications, ScopedTypeVariables,
              BangPatterns, TupleSections, LambdaCase, RecordWildCards #-}
 
 module Text.DAFSA.Graph (
@@ -31,6 +32,8 @@ module Text.DAFSA.Graph (
   -- * 'HashTable's
   insertNewOrElse
 ) where
+
+import GHC.Generics
 
 import Data.Functor
 import Data.Foldable
@@ -53,6 +56,7 @@ data DFAState s = DFAState { stateId   :: !ID
                            , lastChild :: !(STRef s Char)
                            , accept    :: !(STRef s Bool)
                            , children  :: !(Basic.HashTable s Char (DFAState s)) }
+                deriving (Generic)
 
 newEmptyDFAState :: IDAllocator s -> Bool -> ST s (DFAState s)
 newEmptyDFAState idAllocator acc = do

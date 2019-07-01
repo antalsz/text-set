@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
+
 module Text.Set.Test (
   -- * Unified property
   prop_TextSet,
@@ -10,6 +12,9 @@ module Text.Set.Test (
   -- * Nonempty sorted lists
   NonEmptySortedList(..)
 ) where
+
+import GHC.Generics
+import Control.DeepSeq
 
 import Data.List (sort)
 
@@ -24,7 +29,7 @@ import Test.QuickCheck
 -- Nonempty sorted lists
 
 newtype NonEmptySortedList a = NonEmptySorted { getNonEmptySorted :: [a] }
-                             deriving (Eq, Ord, Show, Read)
+                             deriving (Eq, Ord, Show, Read, Generic, NFData)
 
 instance (Arbitrary a, Ord a) => Arbitrary (NonEmptySortedList a) where
   arbitrary = NonEmptySorted  <$> orderedList `suchThat` (not . null)

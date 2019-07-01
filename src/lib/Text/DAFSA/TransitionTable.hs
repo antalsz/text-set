@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveGeneric, DeriveAnyClass, RecordWildCards #-}
 
 module Text.DAFSA.TransitionTable (
   DAFSA(..),
@@ -9,7 +9,9 @@ module Text.DAFSA.TransitionTable (
 
 import Prelude hiding (lookup)
 
+import GHC.Generics
 import Data.Coerce
+import Control.DeepSeq
 
 import Data.Foldable
 
@@ -26,7 +28,7 @@ import Text.DAFSA.Graph
 
 data DAFSA = DAFSA { transitions  :: !(M.Map (ID, Char) ID)
                    , acceptStates :: !S.IntSet }
-           deriving (Eq, Ord, Show, Read)
+           deriving (Eq, Ord, Show, Read, Generic, NFData)
 
 graphToTransitionTable :: DFAState s -> ST s DAFSA
 graphToTransitionTable state0 = do

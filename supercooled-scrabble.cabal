@@ -30,7 +30,7 @@ library
                      , Control.Monad.Util
                      , CLI.BuildTextSet
   
-  other-extensions:    GeneralizedNewtypeDeriving
+  other-extensions:    GeneralizedNewtypeDeriving, DeriveGeneric, DeriveAnyClass, DerivingStrategies
                      , TypeApplications, ScopedTypeVariables, RankNTypes
                      , BangPatterns, TupleSections, LambdaCase, RecordWildCards
   
@@ -40,6 +40,7 @@ library
                      , containers           ==0.6.*
                      , hashtables           ==1.2.*
                      , hashable             ==1.2.*
+                     , deepseq              ==1.4.*
                      , text                 ==1.2.*
                      , QuickCheck           ==2.12.*
                      , optparse-applicative ==0.14.*
