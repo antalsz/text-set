@@ -28,7 +28,7 @@ library
                      , Text.DAFSA.Graph.Inspect
                      , Text.Set.Test
                      , Control.Monad.Util
-                     , CLI.BuildTextSet
+                     , CLI.TextSet
   
   other-extensions:    GeneralizedNewtypeDeriving, DeriveGeneric, DeriveAnyClass, DerivingStrategies
                      , TypeApplications, ScopedTypeVariables, RankNTypes
@@ -50,8 +50,8 @@ library
   default-language:    Haskell2010
   ghc-options:         -Wall -fno-warn-name-shadowing
 
-executable build-text-set
-  main-is:             BuildTextSet.hs
+executable text-set
+  main-is:             TextSet.hs
   build-depends:       base, supercooled-scrabble
   hs-source-dirs:      src/exe
   default-language:    Haskell2010

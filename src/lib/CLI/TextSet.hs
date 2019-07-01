@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass, TypeApplications, LambdaCase, NumDecimals #-}
 
-module CLI.BuildTextSet (
+module CLI.TextSet (
   main,
   -- * CLI interface
   Command(..), commands, commandsInfo,
