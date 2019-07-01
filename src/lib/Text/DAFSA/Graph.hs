@@ -50,6 +50,15 @@ data DFAState s = DFAState { stateId   :: !ID
                            , accept    :: !(STRef s Bool)
                            , children  :: !(Cuckoo.HashTable s Char (DFAState s)) }
 
+newEmptyDFAState :: IDAllocator s -> Bool -> ST s (DFAState s)
+newEmptyDFAState idAllocator acc = do
+  stateId   <- freshID idAllocator
+  lastChild <- newSTRef minBound
+  accept    <- newSTRef acc
+  children  <- H.new
+  pure DFAState{..}
+{-# INLINABLE newEmptyDFAState #-}
+
 -- Module-local
 equiv_children :: Cuckoo.HashTable s Char (DFAState s) -> Cuckoo.HashTable s Char (DFAState s) -> ST s Bool
 equiv_children kids1 kids2 =
@@ -87,19 +96,10 @@ dfaInsert idAllocator = go where
 
 wordDFA :: IDAllocator s -> [Char] -> ST s (DFAState s)
 wordDFA idAllocator = go where
-  go [] = do
-    stateId   <- freshID idAllocator
-    lastChild <- newSTRef '\0'
-    accept    <- newSTRef True
-    children  <- H.new
-    pure DFAState{..}
-  go (c:cs) = do
-    stateId   <- freshID idAllocator
-    lastChild <- newSTRef c
-    accept    <- newSTRef False
-    children  <- H.new
-    H.insert children c =<< go cs
-    pure DFAState{..}
+  go []     = newEmptyDFAState idAllocator True
+  go (c:cs) = do q <- newEmptyDFAState idAllocator False
+                 H.insert (children q) c =<< go cs
+                 pure q
 {-# INLINABLE wordDFA #-}
 
 replaceOrRegister :: IDAllocator s -> STRef s [DFAState s] -> DFAState s -> ST s ()
@@ -117,12 +117,8 @@ replaceOrRegister idAllocator register = go where
 fromAscST :: Foldable t => t String -> ST s (DFAState s)
 fromAscST words = do
   register     <- newSTRef []
-  idAllocator  <- IDAllocator <$> newSTRef 0 <*> newSTRef mempty
-  initialState <- do stateId     <- freshID idAllocator
-                     lastChild   <- newSTRef '\0'
-                     accept      <- newSTRef False
-                     children    <- H.new
-                     pure DFAState{..}
+  idAllocator  <- newIDAllocator
+  initialState <- newEmptyDFAState idAllocator False
 
   for_ words $ \word -> do
     (lastState, currentSuffix) <- walkPrefix initialState  word
