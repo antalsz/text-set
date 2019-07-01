@@ -35,9 +35,10 @@ module Text.DAFSA.Graph (
 import Data.Functor
 import Data.Foldable
 
-import Data.Hashable
-import qualified Data.HashTable.ST.Cuckoo as Cuckoo
+import           Data.Hashable
+import           Data.HashTable.Class     (HashTable)
 import qualified Data.HashTable.Class     as H
+import qualified Data.HashTable.ST.Cuckoo as Cuckoo
 
 import Control.Monad.Util
 import Control.Monad.ST.Strict
@@ -79,7 +80,7 @@ walkPrefix state@DFAState{..} w@(c:cs) = H.lookup children c >>= \case
                                            Just state' -> walkPrefix state' cs
                                            Nothing     -> pure (state, w)
 
-insertNewOrElse :: (H.HashTable h, Eq k, Hashable k) => h s k v -> k -> ST s v -> (v -> ST s ()) -> ST s ()
+insertNewOrElse :: (HashTable h, Eq k, Hashable k) => h s k v -> k -> ST s v -> (v -> ST s ()) -> ST s ()
 insertNewOrElse h k whenAbsent whenPresent =
   H.mutateST h k $ \case
     Just v  -> (Just v,)    <$> whenPresent v
