@@ -36,9 +36,12 @@ import Data.Functor
 import Data.Foldable
 
 import           Data.Hashable
-import           Data.HashTable.Class     (HashTable)
-import qualified Data.HashTable.Class     as H
-import qualified Data.HashTable.ST.Cuckoo as Cuckoo
+import           Data.HashTable.Class    (HashTable)
+import qualified Data.HashTable.Class    as H
+import qualified Data.HashTable.ST.Basic as Basic
+  -- I'd rather use cuckoo hashing, but there's a bug in the library with
+  -- `mutate`/`mutateST` where it loses inserts sometimes -- see
+  -- <https://github.com/gregorycollins/hashtables/issues/55 issue #55>
 
 import Control.Monad.Util
 import Control.Monad.ST.Strict
@@ -49,7 +52,7 @@ import Text.DAFSA.ID
 data DFAState s = DFAState { stateId   :: !ID
                            , lastChild :: !(STRef s Char)
                            , accept    :: !(STRef s Bool)
-                           , children  :: !(Cuckoo.HashTable s Char (DFAState s)) }
+                           , children  :: !(Basic.HashTable s Char (DFAState s)) }
 
 newEmptyDFAState :: IDAllocator s -> Bool -> ST s (DFAState s)
 newEmptyDFAState idAllocator acc = do
@@ -61,7 +64,7 @@ newEmptyDFAState idAllocator acc = do
 {-# INLINABLE newEmptyDFAState #-}
 
 -- Module-local
-equiv_children :: Cuckoo.HashTable s Char (DFAState s) -> Cuckoo.HashTable s Char (DFAState s) -> ST s Bool
+equiv_children :: HashTable h => h s Char (DFAState s) -> h s Char (DFAState s) -> ST s Bool
 equiv_children kids1 kids2 =
   let this `subset` that =
         H.foldM (\b (c,q) -> pure b `andM` any ((stateId q ==) . stateId) <$> H.lookup that c) True this
