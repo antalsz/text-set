@@ -15,6 +15,9 @@ import Control.DeepSeq
 import Data.Foldable
 import Data.List (sort)
 
+import qualified Data.Text    as T
+import qualified Data.Text.IO as T
+
 import qualified Text.Set      as TS
 import qualified Text.Set.Test as TS
 
@@ -65,7 +68,7 @@ benchmarks :: [Benchmark]
 benchmarks = rnf numbers `seq` [create]
   where
     upper   = 1e5
-    numbers = sort $ map (show @Int) [0..upper-1] 
+    numbers = sort $ map (T.pack . show @Int) [0..upper-1] 
     create  = bgroup "create" . flip map [1e3,2e3..upper] $ \k ->
                 bench (show k) . nf TS.fromAsc $ take k numbers
 
@@ -81,7 +84,7 @@ main = execParser commandsInfo >>= \case
                                   , "prop_TextSetMembers"       -: TS.prop_TextSetMembers
                                   , "prop_TextSetAll"           -: TS.prop_TextSetAll]
   where
-    dumpBuilt from = print . TS.textSetDAFSA . from . lines =<< getContents
+    dumpBuilt from = print . TS.textSetDAFSA . from . T.lines =<< T.getContents
     {-# INLINE dumpBuilt #-}
     
     name -: prop = (name, property prop)

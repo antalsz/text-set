@@ -1,4 +1,5 @@
 {-# LANGUAGE DeriveGeneric, DeriveAnyClass #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 module Text.Set.Test (
   -- * Unified property
@@ -11,6 +12,9 @@ module Text.Set.Test (
 
   -- * Nonempty sorted lists
   NonEmptySortedList(..)
+
+  -- * Orphan instances
+  -- | This module provides an orphan instance for @'Arbitrary' 'Text'@
 ) where
 
 import GHC.Generics
@@ -18,12 +22,22 @@ import Control.DeepSeq
 
 import Data.List (sort)
 
+import           Data.Text (Text)
+import qualified Data.Text as T
+
 import           Data.Set (Set)
 import           Text.Set (TextSet)
 import qualified Data.Set as S
 import qualified Text.Set as TS
 
 import Test.QuickCheck
+
+--------------------------------------------------------------------------------
+-- Orphan instances
+
+instance Arbitrary Text where
+  arbitrary = T.pack <$> listOf arbitrary
+  shrink    = map T.pack . shrink . T.unpack
 
 --------------------------------------------------------------------------------
 -- Nonempty sorted lists
@@ -38,32 +52,32 @@ instance (Arbitrary a, Ord a) => Arbitrary (NonEmptySortedList a) where
 ------------------------------------------------------------------------------------------
 -- Building blocks (module-local)
 
-test_IsEmpty :: TextSet -> String -> Bool
+test_IsEmpty :: TextSet -> Text -> Bool
 test_IsEmpty tset =
   (`TS.notMember` tset)
 {-# INLINE test_IsEmpty #-}
 
-test_HasMembers :: Set String -> TextSet -> Property
+test_HasMembers :: Set Text -> TextSet -> Property
 test_HasMembers sset tset =
   forAll (choose (0, length sset - 1)) ((`TS.member` tset) . (`S.elemAt` sset))
 {-# INLINE test_HasMembers #-}
 
-test_SameMembership :: Set String -> TextSet -> String -> Bool
+test_SameMembership :: Set Text -> TextSet -> Text -> Bool
 test_SameMembership sset tset = \word ->
   word `S.member` sset == word `TS.member` tset
 {-# INLINE test_SameMembership #-}
 
 test_OnSetAndTextSet :: Testable prop
-                     => (Set String -> TextSet -> prop)
-                     -> SortedList String
+                     => (Set Text -> TextSet -> prop)
+                     -> SortedList Text
                      -> Property
 test_OnSetAndTextSet test =
   property . (test <$> S.fromAscList <*> TS.fromAsc) . getSorted
 {-# INLINE test_OnSetAndTextSet #-}
 
 test_OnNonemptySetAndTextSet :: Testable prop
-                             => (Set String -> TextSet -> prop)
-                             -> NonEmptySortedList String
+                             => (Set Text -> TextSet -> prop)
+                             -> NonEmptySortedList Text
                              -> Property
 test_OnNonemptySetAndTextSet test =
   test_OnSetAndTextSet test . Sorted . getNonEmptySorted
@@ -72,7 +86,7 @@ test_OnNonemptySetAndTextSet test =
 --------------------------------------------------------------------------------
 -- Properties
 
-prop_TextSet :: SortedList String -> Property
+prop_TextSet :: SortedList Text -> Property
 prop_TextSet (Sorted words) =
   let sset = S.fromAscList words
       tset = TS.fromAsc    words
@@ -81,14 +95,14 @@ prop_TextSet (Sorted words) =
      else test_HasMembers     sset tset .&&.
           test_SameMembership sset tset
 
-prop_ConstantEmptyTextSet :: String -> Bool
+prop_ConstantEmptyTextSet :: Text -> Bool
 prop_ConstantEmptyTextSet = (`TS.notMember` TS.empty)
 
-prop_FromAscEmptyTextSet :: String -> Bool
+prop_FromAscEmptyTextSet :: Text -> Bool
 prop_FromAscEmptyTextSet = (`TS.notMember` TS.fromAsc [])
 
-prop_TextSetMembers :: NonEmptySortedList String -> Property
+prop_TextSetMembers :: NonEmptySortedList Text -> Property
 prop_TextSetMembers = test_OnNonemptySetAndTextSet test_HasMembers
 
-prop_TextSetAll :: NonEmptySortedList String -> Property
+prop_TextSetAll :: NonEmptySortedList Text -> Property
 prop_TextSetAll = test_OnNonemptySetAndTextSet test_SameMembership

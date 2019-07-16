@@ -18,6 +18,8 @@ import Control.DeepSeq
 import Data.Foldable hiding (null)
 import Data.List (sort)
 
+import Data.Text (Text)
+
 import qualified Data.IntSet as S
 
 import Text.DAFSA.ID (ID(..))
@@ -30,24 +32,24 @@ empty :: TextSet
 empty = TextSet $ DAFSA mempty mempty
 {-# INLINABLE empty #-}
 
-singleton :: String -> TextSet
+singleton :: Text -> TextSet
 singleton = fromAsc . (:[])
 {-# INLINABLE singleton #-}
 
-fromAsc :: forall t. Foldable t => t String -> TextSet
+fromAsc :: forall t. Foldable t => t Text -> TextSet
 fromAsc = coerce $ DAFSA.fromAsc @t
 {-# INLINABLE  fromAsc #-}
-{-# SPECIALIZE fromAsc :: [String] -> TextSet #-}
+{-# SPECIALIZE fromAsc :: [Text] -> TextSet #-}
 
-fromFoldable :: Foldable t => t String -> TextSet
+fromFoldable :: Foldable t => t Text -> TextSet
 fromFoldable = fromAsc . sort . toList
 {-# INLINABLE fromFoldable #-}
 
-member :: String -> TextSet -> Bool
-member s (TextSet dafsa) = any (coerce (`S.member` acceptStates dafsa)) $ (lookup s dafsa)
+member :: Text -> TextSet -> Bool
+member s (TextSet dafsa) = any (coerce (`S.member` acceptStates dafsa)) $ lookup s dafsa
 {-# INLINABLE member #-}
 
-notMember :: String -> TextSet -> Bool
+notMember :: Text -> TextSet -> Bool
 notMember = \s set -> not $ s `member` set
 {-# INLINABLE notMember #-}
 

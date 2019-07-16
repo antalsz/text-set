@@ -13,7 +13,8 @@ import GHC.Generics
 import Data.Coerce
 import Control.DeepSeq
 
-import Data.Foldable
+import           Data.Text (Text)
+import qualified Data.Text as T
 
 import qualified Data.IntSet          as S
 import qualified Data.Map.Strict      as M
@@ -44,11 +45,14 @@ graphToTransitionTable state0 = do
   go state0
   DAFSA <$> readSTRef transitions <*> readSTRef acceptStates
 
-fromAsc :: Foldable t => t String -> DAFSA
+fromAsc :: Foldable t => t Text -> DAFSA
 fromAsc words = runST $ graphToTransitionTable =<< fromAscST words
 {-# INLINABLE  fromAsc #-}
-{-# SPECIALIZE fromAsc :: [String] -> DAFSA #-}
+{-# SPECIALIZE fromAsc :: [Text] -> DAFSA #-}
 
-lookup :: String -> DAFSA -> Maybe ID
-lookup w DAFSA{..} = foldlM (\q c -> M.lookup (q,c) transitions) 0 w
+lookup :: Text -> DAFSA -> Maybe ID
+lookup w DAFSA{..} = foldlMT (\q c -> M.lookup (q,c) transitions) 0 w
+  where -- Stole the implementation from "Data.Foldable"
+        foldlMT f z0 xs = T.foldr f' return xs z0
+          where f' x k z = f z x >>= k
 {-# INLINABLE lookup #-}

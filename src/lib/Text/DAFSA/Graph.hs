@@ -14,7 +14,7 @@ Linguistics/ 26(1), pp.3-16.  Available online at
 
 {-# LANGUAGE DeriveGeneric,
              TypeApplications, ScopedTypeVariables,
-             BangPatterns, TupleSections, LambdaCase, RecordWildCards #-}
+             TupleSections, LambdaCase, RecordWildCards, OverloadedStrings #-}
 
 module Text.DAFSA.Graph (
   -- * DFA states
@@ -37,6 +37,10 @@ import GHC.Generics
 
 import Data.Functor
 import Data.Foldable
+
+import           Data.Text (Text)
+import qualified Data.Text as T
+
 
 import           Data.Hashable
 import           Data.HashTable.Class    (HashTable)
@@ -81,11 +85,13 @@ equiv state1 state2 =
   (==) <$> readSTRef (accept state1) <*> readSTRef (accept state2) `andM`
   children state1 `equiv_children` children state2
 
-walkPrefix :: DFAState s -> String -> ST s (DFAState s, String)
-walkPrefix !state             []       = pure (state, [])
-walkPrefix state@DFAState{..} w@(c:cs) = H.lookup children c >>= \case
-                                           Just state' -> walkPrefix state' cs
-                                           Nothing     -> pure (state, w)
+-- TODO more efficient?
+walkPrefix :: DFAState s -> Text -> ST s (DFAState s, Text)
+walkPrefix state@DFAState{..} w = case T.uncons w of
+  Nothing     -> pure (state, "")
+  Just (c,cs) -> H.lookup children c >>= \case
+                   Just state' -> walkPrefix state' cs
+                   Nothing     -> pure (state, w)
 
 insertNewOrElse :: (HashTable h, Eq k, Hashable k) => h s k v -> k -> ST s v -> (v -> ST s ()) -> ST s ()
 insertNewOrElse h k whenAbsent whenPresent =
@@ -94,20 +100,22 @@ insertNewOrElse h k whenAbsent whenPresent =
     Nothing -> (,()) . Just <$> whenAbsent
 {-# INLINABLE insertNewOrElse #-}
 
-dfaInsert :: IDAllocator s -> DFAState s -> String -> ST s ()
+dfaInsert :: IDAllocator s -> DFAState s -> Text -> ST s ()
 dfaInsert idAllocator = go where
-  go DFAState{..} []     = writeSTRef accept True
-  go DFAState{..} (c:cs) = insertNewOrElse children c
-                             (modifySTRef' lastChild (max c) *> wordDFA idAllocator cs)
-                             (\state' -> dfaInsert idAllocator state' cs)
+  go DFAState{..} = T.uncons <&> \case
+    Nothing     -> writeSTRef accept True
+    Just (c,cs) -> insertNewOrElse children c
+                     (modifySTRef' lastChild (max c) *> wordDFA idAllocator cs)
+                     (\state' -> dfaInsert idAllocator state' cs)
 {-# INLINABLE dfaInsert #-}
 
-wordDFA :: IDAllocator s -> [Char] -> ST s (DFAState s)
+wordDFA :: IDAllocator s -> Text -> ST s (DFAState s)
 wordDFA idAllocator = go where
-  go []     = newEmptyDFAState idAllocator True
-  go (c:cs) = do q <- newEmptyDFAState idAllocator False
-                 H.insert (children q) c =<< go cs
-                 pure q
+  go = T.uncons <&> \case
+     Nothing     -> newEmptyDFAState idAllocator True
+     Just (c,cs) -> do q <- newEmptyDFAState idAllocator False
+                       H.insert (children q) c =<< go cs
+                       pure q
 {-# INLINABLE wordDFA #-}
 
 replaceOrRegister :: IDAllocator s -> STRef s [DFAState s] -> DFAState s -> ST s ()
@@ -122,7 +130,7 @@ replaceOrRegister idAllocator register = go where
         Nothing -> modifySTRef' register (child:)
 {-# INLINABLE  replaceOrRegister #-}
 
-fromAscST :: Foldable t => t String -> ST s (DFAState s)
+fromAscST :: Foldable t => t Text -> ST s (DFAState s)
 fromAscST words = do
   register     <- newSTRef []
   idAllocator  <- newIDAllocator
@@ -134,4 +142,4 @@ fromAscST words = do
     dfaInsert idAllocator lastState currentSuffix
   replaceOrRegister idAllocator register initialState
   pure initialState
-{-# SPECIALIZE fromAscST :: [String] -> ST s (DFAState s) #-}
+{-# SPECIALIZE fromAscST :: [Text] -> ST s (DFAState s) #-}
