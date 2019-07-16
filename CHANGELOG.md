@@ -1,4 +1,4 @@
-# Revision history for supercooled-scrabble
+# Revision history for text-set
 
 ## 0.0.0.0 -- YYYY-mm-dd
 
